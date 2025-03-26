@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, googleProvider, db } from "@/lib/firebase";
-import { signInWithPopup, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { signInWithPopup, createUserWithEmailAndPassword, updateProfile, User } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,8 +18,8 @@ export default function SignUp() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  // Save user data to Firestore
-  const saveUserToFirestore = async (user: any, userName: string) => {
+  // ✅ Save user data to Firestore
+  const saveUserToFirestore = async (user: User, userName: string) => {
     try {
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, {
@@ -28,56 +28,76 @@ export default function SignUp() {
         email: user.email,
         createdAt: new Date(),
       });
-    } catch (error) {
-      console.error("Error saving user to Firestore:", error);
+      console.log("User saved to Firestore:", userName);
+    } catch (err) {
+      console.error("Firestore error:", err);
+      setError("Failed to save user data. Try again.");
     }
   };
 
-  // Handle Email/Password Sign-Up
-  const handleSignUp = async (e: React.FormEvent) => {
+  // ✅ Handle Email/Password Sign-Up
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError("All fields are required.");
+      return;
+    }
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Update user profile with name
       await updateProfile(user, { displayName: name });
-
-      // Save user to Firestore
       await saveUserToFirestore(user, name);
 
-      router.push("/home"); // Redirect after successful sign-up
+      router.push("/home");
     } catch (err: any) {
-      console.error("Signup Error:", err);
-      if (err.code === "auth/email-already-in-use") {
-        setError("Email already in use. Please login instead.");
-      } else if (err.code === "auth/weak-password") {
-        setError("Password should be at least 6 characters.");
-      } else {
-        setError("Sign-up failed. Please try again.");
-      }
+      console.error("Sign-up error:", err.code, err.message);
+
+      const errorMessages: Record<string, string> = {
+        "auth/email-already-in-use": "Email already in use. Please login instead.",
+        "auth/weak-password": "Password must be at least 6 characters.",
+        "auth/invalid-email": "Invalid email format.",
+        "auth/network-request-failed": "Network error. Check your connection.",
+      };
+
+      setError(errorMessages[err.code] || "Sign-up failed. Try again.");
     }
   };
 
-  // Handle Google Sign-Up
+  // ✅ Handle Google Sign-Up
   const handleGoogleSignUp = async () => {
+    setError("");
+
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
-      await saveUserToFirestore(userCredential.user, userCredential.user.displayName || "Google User");
+      const user = userCredential.user;
+
+      await saveUserToFirestore(user, user.displayName || "Google User");
       router.push("/home");
-    } catch (err) {
-      console.error("Google Sign-Up Error:", err);
-      setError("Google Sign-Up failed. Try again.");
+    } catch (err: any) {
+      console.error("Google Sign-Up Error:", err.code, err.message);
+
+      const errorMessages: Record<string, string> = {
+        "auth/popup-closed-by-user": "Sign-in popup closed. Try again.",
+        "auth/account-exists-with-different-credential":
+          "This email is linked to another login method.",
+        "auth/network-request-failed": "Network error. Check your connection.",
+      };
+
+      setError(errorMessages[err.code] || "Google Sign-Up failed. Try again.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <Card className="w-96 shadow-md bg-white p-6">
+    <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
+      <Card className="w-96 shadow-lg bg-white dark:bg-gray-800 p-6">
         <CardHeader>
-          <CardTitle className="text-center text-lg font-semibold">Sign Up</CardTitle>
+          <CardTitle className="text-center text-lg font-semibold text-gray-900 dark:text-white">
+            Sign Up
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
@@ -106,7 +126,8 @@ export default function SignUp() {
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-3 flex items-center"
+                aria-label="Toggle password visibility"
+                className="absolute inset-y-0 right-3 flex items-center text-gray-600 dark:text-gray-400"
                 onClick={() => setPasswordVisible(!passwordVisible)}
               >
                 {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -118,12 +139,12 @@ export default function SignUp() {
           </form>
           <Button
             onClick={handleGoogleSignUp}
-            className="w-full mt-2 bg-gray-200 hover:bg-gray-300 text-black"
+            className="w-full mt-2 bg-gray-200 hover:bg-gray-300 text-black dark:bg-gray-700 dark:hover:bg-gray-600"
             variant="outline"
           >
             Sign Up with Google
           </Button>
-          <p className="text-center text-sm mt-3">
+          <p className="text-center text-sm mt-3 text-gray-700 dark:text-gray-300">
             Already have an account?{" "}
             <span className="text-blue-500 cursor-pointer" onClick={() => router.push("/auth/login")}>
               Login

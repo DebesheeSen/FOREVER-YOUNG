@@ -25,7 +25,6 @@ export default function LoginPage() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log("User detected:", user.uid);
-
         const userExists = await checkUserInFirestore(user.uid);
         if (userExists) {
           console.log("User exists in Firestore. Redirecting to /home");
@@ -37,8 +36,8 @@ export default function LoginPage() {
     return () => unsubscribe();
   }, [router]);
 
-  // ✅ Check if user exists in Firestore
-  const checkUserInFirestore = async (uid: string) => {
+  // ✅ Type Definition for Firestore User Check
+  const checkUserInFirestore = async (uid: string): Promise<boolean> => {
     try {
       const userRef = doc(db, "users", uid);
       const userSnap = await getDoc(userRef);
@@ -49,8 +48,14 @@ export default function LoginPage() {
     }
   };
 
-  // ✅ Save new user to Firestore
-  const saveUserToFirestore = async (user: any) => {
+  // ✅ Type Definition for Saving User in Firestore
+  interface User {
+    uid: string;
+    displayName: string | null;
+    email: string | null;
+  }
+
+  const saveUserToFirestore = async (user: User) => {
     const userRef = doc(db, "users", user.uid);
     try {
       await setDoc(userRef, {
@@ -65,43 +70,43 @@ export default function LoginPage() {
     }
   };
 
-  // ✅ Handle login with email/password
+  // ✅ Handle Login with Email/Password
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-  
+
     try {
       if (!email.trim() || !password.trim()) {
         setError("Email and password are required.");
         return;
       }
-  
+
       console.log("Attempting login with:", { email: email.trim(), password });
-  
+
       const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
       const user = userCredential.user;
-  
+
       console.log("Login successful:", user);
-  
+
       const userExists = await checkUserInFirestore(user.uid);
       if (!userExists) await saveUserToFirestore(user);
-  
+
       router.push("/home");
-    } catch (err: any) {
-      console.error("Login error:", err.code, err.message);
-  
-      const errorMessages: Record<string, string> = {
-        "auth/invalid-credential": "Invalid email or password. Please try again.",
-        "auth/user-not-found": "No account found with this email. Please sign up.",
-        "auth/wrong-password": "Incorrect password. Try again.",
-        "auth/too-many-requests": "Too many failed attempts. Try again later.",
-        "auth/network-request-failed": "Network error. Check your connection.",
-      };
-  
-      setError(errorMessages[err.code] || "Login failed. Try again later.");
+    } catch (err: unknown) {
+      console.error("Login error:", err);
+      if (err instanceof Error) {
+        const errorMessages: Record<string, string> = {
+          "auth/invalid-credential": "Invalid email or password. Please try again.",
+          "auth/user-not-found": "No account found with this email. Please sign up.",
+          "auth/wrong-password": "Incorrect password. Try again.",
+          "auth/too-many-requests": "Too many failed attempts. Try again later.",
+          "auth/network-request-failed": "Network error. Check your connection.",
+        };
+
+        setError(errorMessages[err.message] || "Login failed. Try again later.");
+      }
     }
   };
-  
 
   // ✅ Handle Google Login
   const handleGoogleLogin = async () => {
@@ -115,18 +120,19 @@ export default function LoginPage() {
       if (!userExists) await saveUserToFirestore(user);
 
       router.push("/home");
-    } catch (err: any) {
-      console.error("Google sign-in error:", err.code, err.message);
+    } catch (err: unknown) {
+      console.error("Google sign-in error:", err);
+      if (err instanceof Error) {
+        const errorMessages: Record<string, string> = {
+          "auth/popup-closed-by-user": "Sign-in popup closed. Try again.",
+          "auth/cancelled-popup-request": "Multiple popups blocked. Try again.",
+          "auth/account-exists-with-different-credential":
+            "This email is already linked to another login method.",
+          "auth/network-request-failed": "Network error. Check your connection.",
+        };
 
-      const errorMessages: Record<string, string> = {
-        "auth/popup-closed-by-user": "Sign-in popup closed. Try again.",
-        "auth/cancelled-popup-request": "Multiple popups blocked. Try again.",
-        "auth/account-exists-with-different-credential":
-          "This email is already linked to another login method.",
-        "auth/network-request-failed": "Network error. Check your connection.",
-      };
-
-      setError(errorMessages[err.code] || "Google sign-in failed. Try again.");
+        setError(errorMessages[err.message] || "Google sign-in failed. Try again.");
+      }
     }
   };
 
@@ -156,6 +162,7 @@ export default function LoginPage() {
               />
               <button
                 type="button"
+                aria-label={passwordVisible ? "Hide password" : "Show password"}
                 className="absolute inset-y-0 right-3 flex items-center"
                 onClick={() => setPasswordVisible(!passwordVisible)}
               >
@@ -177,7 +184,7 @@ export default function LoginPage() {
             Sign in with Google
           </Button>
           <p className="text-center text-sm mt-3">
-            Don't have an account?{" "}
+            Don&rsquo;t have an account?{" "}
             <span
               className="text-blue-500 cursor-pointer"
               onClick={() => router.push("/auth/signup")}
