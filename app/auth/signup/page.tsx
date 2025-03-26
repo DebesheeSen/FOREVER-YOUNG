@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { signInWithPopup, createUserWithEmailAndPassword, updateProfile, User } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { FirebaseError } from "firebase/app"; // ✅ Import for error handling
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,8 +30,12 @@ export default function SignUp() {
         createdAt: new Date(),
       });
       console.log("User saved to Firestore:", userName);
-    } catch (err) {
-      console.error("Firestore error:", err);
+    } catch (err: unknown) {
+      if (err instanceof FirebaseError) {
+        console.error("Firestore error:", err.message);
+      } else {
+        console.error("Unexpected error:", err);
+      }
       setError("Failed to save user data. Try again.");
     }
   };
@@ -53,17 +58,22 @@ export default function SignUp() {
       await saveUserToFirestore(user, name);
 
       router.push("/home");
-    } catch (err: any) {
-      console.error("Sign-up error:", err.code, err.message);
+    } catch (err: unknown) {
+      if (err instanceof FirebaseError) {
+        console.error("Sign-up error:", err.code, err.message);
 
-      const errorMessages: Record<string, string> = {
-        "auth/email-already-in-use": "Email already in use. Please login instead.",
-        "auth/weak-password": "Password must be at least 6 characters.",
-        "auth/invalid-email": "Invalid email format.",
-        "auth/network-request-failed": "Network error. Check your connection.",
-      };
+        const errorMessages: Record<string, string> = {
+          "auth/email-already-in-use": "Email already in use. Please login instead.",
+          "auth/weak-password": "Password must be at least 6 characters.",
+          "auth/invalid-email": "Invalid email format.",
+          "auth/network-request-failed": "Network error. Check your connection.",
+        };
 
-      setError(errorMessages[err.code] || "Sign-up failed. Try again.");
+        setError(errorMessages[err.code] || "Sign-up failed. Try again.");
+      } else {
+        console.error("Unexpected error:", err);
+        setError("An unexpected error occurred. Please try again.");
+      }
     }
   };
 
@@ -77,17 +87,22 @@ export default function SignUp() {
 
       await saveUserToFirestore(user, user.displayName || "Google User");
       router.push("/home");
-    } catch (err: any) {
-      console.error("Google Sign-Up Error:", err.code, err.message);
+    } catch (err: unknown) {
+      if (err instanceof FirebaseError) {
+        console.error("Google Sign-Up Error:", err.code, err.message);
 
-      const errorMessages: Record<string, string> = {
-        "auth/popup-closed-by-user": "Sign-in popup closed. Try again.",
-        "auth/account-exists-with-different-credential":
-          "This email is linked to another login method.",
-        "auth/network-request-failed": "Network error. Check your connection.",
-      };
+        const errorMessages: Record<string, string> = {
+          "auth/popup-closed-by-user": "Sign-in popup closed. Try again.",
+          "auth/account-exists-with-different-credential":
+            "This email is linked to another login method.",
+          "auth/network-request-failed": "Network error. Check your connection.",
+        };
 
-      setError(errorMessages[err.code] || "Google Sign-Up failed. Try again.");
+        setError(errorMessages[err.code] || "Google Sign-Up failed. Try again.");
+      } else {
+        console.error("Unexpected error:", err);
+        setError("An unexpected error occurred. Please try again.");
+      }
     }
   };
 
