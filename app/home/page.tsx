@@ -68,7 +68,7 @@ export default function HomePage() {
             <Button variant="ghost" onClick={() => router.push("/history")} className="text-white">History</Button>
             <Button variant="ghost" onClick={() => router.push("/profile")} className="text-white">Profile</Button>
             <Button variant="ghost" onClick={() => router.push("/feedback")} className="text-white">Feedback</Button>
-            <Button variant="ghost" onClick={() => router.push("/contact")} className="text-white">Contact</Button>
+            <Button variant="ghost" onClick={() => router.push("/about")} className="text-white">About Us</Button>
             <Button onClick={handleLogout} variant="destructive">Logout</Button>
           </div>
         </div>
@@ -107,6 +107,10 @@ export default function HomePage() {
           ))
         )}
       </div>
+
+      <footer className="mt-10 text-center text-gray-600 dark:text-gray-400">
+        &copy; 2025 Forever Young. All rights reserved.
+      </footer>
     </div>
   );
 }
