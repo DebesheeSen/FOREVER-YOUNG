@@ -23,7 +23,7 @@ export default function ConfirmPayPage() {
   const [cart, setCart] = useState<Service[]>(
     JSON.parse(searchParams.get("cartItems") || "[]")
   );
-  const [totalPrice, setTotalPrice] = useState<number>(
+  const [totalPrice] = useState<number>(
     parseFloat(searchParams.get("totalPrice") || "0")
   );
   const [deliveryDate, setDeliveryDate] = useState("");
