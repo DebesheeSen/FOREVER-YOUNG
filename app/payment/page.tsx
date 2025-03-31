@@ -97,7 +97,7 @@ export default function PaymentPage() {
         },
         body: JSON.stringify({
           amount: totalAmount,
-          currency: 'USD',
+          currency: 'INR',
           description: 'Forever Young Services'
         }),
       });
@@ -215,7 +215,7 @@ export default function PaymentPage() {
             <div className="mt-6">
             <PayPalScriptProvider options={{ 
                 clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
-                currency: "USD",
+                currency: "INR",
                 intent: "capture"
                 }}>
                 <PayPalButtons 
