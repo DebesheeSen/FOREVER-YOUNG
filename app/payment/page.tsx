@@ -6,12 +6,11 @@ import { auth, db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, updateDoc, doc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth"; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { PayPalScriptProvider, PayPalButtons} from "@paypal/react-paypal-js";
 
 type Service = {
   id: string;
@@ -23,13 +22,37 @@ type Service = {
   deliveryTime?: string;
 };
 
+type PayPalOrderResponse = {
+  status: string;
+  payer?: {
+    payer_id?: string;
+  };
+};
+
+
+  
+type PayPalOnApproveData = {
+    orderID: string;
+    payerID?: string;
+    paymentID?: string;
+    billingToken?: string;
+    facilitatorAccessToken: string;
+};
+
+type PayPalError = {
+    name: string;
+    message: string;
+    details?: Record<string, unknown>;
+    // Add other PayPal-specific error properties if needed
+  };
+
 export default function PaymentPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [cart, setCart] = useState<Service[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [selectedTime] = useState<string>("12:00");
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [date, setDate] = useState<Date | null>(new Date());
 
@@ -54,16 +77,6 @@ export default function PaymentPage() {
     return () => unsubscribe();
   }, [router]);
 
-  const handleDateChange = (date: Date | undefined, cartId: string) => {
-    if (!date) return;
-    
-    setCart(prevCart => 
-      prevCart.map(item => 
-        item.cartId === cartId ? { ...item, deliveryDate: date } : item
-      )
-    );
-  };
-
   const handleTimeChange = (time: string, cartId: string) => {
     setCart(prevCart => 
       prevCart.map(item => 
@@ -72,12 +85,13 @@ export default function PaymentPage() {
     );
   };
 
-  const createOrder = async () => {
+  const createOrder = async (): Promise<string> => {
     try {
-      // First create the order in Firestore (with status 'pending')
+      if (!user) throw new Error("User not authenticated");
+      
       const paymentData = {
-        userId: user?.uid,
-        userName: user?.displayName || user?.email,
+        userId: user.uid,
+        userName: user.displayName || user.email,
         items: cart.map(item => ({
           id: item.id,
           name: item.name,
@@ -87,14 +101,12 @@ export default function PaymentPage() {
         })),
         totalAmount,
         paymentDate: serverTimestamp(),
-        status: "pending"
+        status: "pending" as const
       };
 
-      // Add to history collection
       const docRef = await addDoc(collection(db, "history"), paymentData);
       setOrderId(docRef.id);
 
-      // Create PayPal order
       const response = await fetch('/api/paypal/create-order', {
         method: 'POST',
         headers: {
@@ -108,16 +120,19 @@ export default function PaymentPage() {
       });
 
       const { id } = await response.json();
+      if (typeof id !== 'string') throw new Error("Invalid order ID");
       return id;
     } catch (error) {
       console.error("Error creating order:", error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      }
       throw error;
     }
   };
 
-  const onApprove = async (data: { orderID: string }) => {
+  const onApprove = async (data: { orderID: string; payerID?: string | null }) => {
     try {
-      // Capture the payment
       const response = await fetch(`/api/paypal/capture-order`, {
         method: 'POST',
         headers: {
@@ -128,14 +143,13 @@ export default function PaymentPage() {
         }),
       });
 
-      const result = await response.json();
+      const result: PayPalOrderResponse = await response.json();
 
       if (result.status === 'COMPLETED' && orderId) {
-        // Update Firestore document to 'completed'
         await updateDoc(doc(db, "history", orderId), {
           status: "completed",
           paypalOrderId: data.orderID,
-          paypalPayerId: result.payer.payer_id,
+          paypalPayerId: result.payer?.payer_id,
           updatedAt: serverTimestamp()
         });
         
@@ -150,9 +164,10 @@ export default function PaymentPage() {
     }
   };
 
-  const onError = (err: any) => {
-    console.error("PayPal error:", err);
-    toast.error("Payment failed. Please try again.");
+  const onError = (err: Record<string, unknown>) => {
+    const errorMessage = typeof err.message === 'string' ? err.message : "Payment failed. Please try again.";
+    console.error("PayPal error:", errorMessage);
+    toast.error(errorMessage);
   };
 
   return (
@@ -186,10 +201,10 @@ export default function PaymentPage() {
                       Delivery Date
                     </label>
                     <LocalizationProvider dateAdapter={AdapterDateFns}>
-                        <DatePicker 
-                            value={date}
-                            onChange={(newValue) => setDate(newValue)}
-                        />
+                      <DatePicker 
+                        value={date}
+                        onChange={(newValue) => setDate(newValue)}
+                      />
                     </LocalizationProvider>
                   </div>
                   
@@ -215,19 +230,23 @@ export default function PaymentPage() {
             </div>
             
             <div className="mt-6">
-              <PayPalScriptProvider options={{ 
-                "clientId": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
+            <PayPalScriptProvider options={{ 
+                clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
                 currency: "USD",
                 intent: "capture"
-              }}>
+                }}>
                 <PayPalButtons 
-                  style={{ layout: "vertical" }}
-                  createOrder={createOrder}
-                  onApprove={onApprove}
-                  onError={onError}
-                  disabled={loading || cart.some(item => !item.deliveryDate || !item.deliveryTime)}
+                    style={{ layout: "vertical" }}
+                    createOrder={createOrder}
+                    onApprove={onApprove}
+                    onError={(err) => onError({
+                        name: 'PayPalError',
+                        message: err.message || 'Unknown PayPal error',
+                        ...err
+                        })}
+                        disabled={loading || cart.some(item => !item.deliveryDate || !item.deliveryTime)}
                 />
-              </PayPalScriptProvider>
+            </PayPalScriptProvider>
             </div>
           </CardContent>
         </Card>

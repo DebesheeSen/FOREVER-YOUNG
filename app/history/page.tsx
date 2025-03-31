@@ -83,7 +83,7 @@ export default function HistoryPage() {
       </nav>
 
       <div className="mt-6 text-center">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Order History</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Order History for {user?.displayName || user?.email || "User"}</h1>
       </div>
 
       <div className="max-w-4xl mx-auto mt-8">
