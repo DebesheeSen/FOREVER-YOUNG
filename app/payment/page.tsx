@@ -35,7 +35,6 @@ export default function PaymentPage() {
   const [cart, setCart] = useState<Service[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [selectedTime] = useState<string>("12:00");
-  const [loading] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [date, setDate] = useState<Date | null>(new Date());
 
