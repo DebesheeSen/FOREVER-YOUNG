@@ -29,23 +29,6 @@ type PayPalOrderResponse = {
   };
 };
 
-
-  
-type PayPalOnApproveData = {
-    orderID: string;
-    payerID?: string;
-    paymentID?: string;
-    billingToken?: string;
-    facilitatorAccessToken: string;
-};
-
-type PayPalError = {
-    name: string;
-    message: string;
-    details?: Record<string, unknown>;
-    // Add other PayPal-specific error properties if needed
-  };
-
 export default function PaymentPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
