@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     intent: 'CAPTURE',
     purchase_units: [{
       amount: {
-        currency_code: 'USD',
+        currency_code: 'INR',
         value: amount.toString()
       }
     }],

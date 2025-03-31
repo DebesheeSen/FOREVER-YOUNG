@@ -184,9 +184,14 @@ export default function PaymentPage() {
                       Delivery Date
                     </label>
                     <LocalizationProvider dateAdapter={AdapterDateFns}>
-                      <DatePicker 
+                    <DatePicker 
                         value={date}
-                        onChange={(newValue) => setDate(newValue)}
+                        onChange={(newValue) => {
+                          setDate(newValue);
+                          setCart(prevCart => 
+                            prevCart.map(item => ({ ...item, deliveryDate: newValue || undefined }))
+                          );
+                        }}
                       />
                     </LocalizationProvider>
                   </div>
@@ -227,7 +232,7 @@ export default function PaymentPage() {
                         message: err.message || 'Unknown PayPal error',
                         ...err
                         })}
-                        disabled={loading || cart.some(item => !item.deliveryDate || !item.deliveryTime)}
+                        //disabled={loading || cart.some(item => !item.deliveryDate || !item.deliveryTime)}
                 />
             </PayPalScriptProvider>
             </div>
