@@ -14,6 +14,7 @@ type Service = {
   name: string;
   description: string;
   price: number;
+  cartId?: string;
 };
 
 export default function HomePage() {
@@ -40,8 +41,14 @@ export default function HomePage() {
   }, [router]);
 
   const addToCart = (service: Service) => {
-    setCart((prevCart) => [...prevCart, service]);
+    const cartItem = { ...service, cartId: `${service.id}-${Date.now()}` }; // Unique ID
+    setCart((prevCart) => [...prevCart, cartItem]);
     toast.success(`${service.name} added to cart`);
+  };
+
+  const removeFromCart = (cartId: string) => {
+    setCart((prevCart) => prevCart.filter((item) => item.cartId !== cartId));
+    toast.info("Item removed from cart");
   };
 
   const handleLogout = async () => {
@@ -49,12 +56,21 @@ export default function HomePage() {
     toast.info("Logged out successfully");
     router.push("/");
   };
+  
+  const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
+
+
+  const proceedToPayment = () => {
+    localStorage.setItem("cartItems", JSON.stringify(cart));
+    localStorage.setItem("totalAmount", JSON.stringify(totalAmount));
+    router.push("/payment");
+  };
 
   return (
     <div className="p-6 min-h-screen bg-gradient-to-b from-blue-200 to-purple-300 dark:from-blue-900 dark:to-purple-700">
       {/* Responsive Navbar */}
       <nav className="bg-blue-900 dark:bg-blue-950 p-4 rounded-lg shadow-md text-white flex justify-between items-center relative">
-        <h1 className="text-3xl font-extrabold tracking-wider uppercase">FOREVER YOUNG</h1>
+        <h1 className="text-3xl font-extrabold tracking-wider uppercase" onClick={() => router.push("/home")}>FOREVER YOUNG</h1>
         
         {/* Hamburger Menu for Mobile */}
         <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden">
@@ -90,7 +106,7 @@ export default function HomePage() {
             <CardContent>
               <p className="text-gray-700 dark:text-gray-300">{service.description}</p>
               <p className="font-bold text-gray-900 dark:text-gray-200">₹{service.price}</p>
-              <Button onClick={() => addToCart(service)} className="mt-2 bg-blue-700 dark:bg-purple-700 text-white">Add to Cart</Button>
+              <Button onClick={() => addToCart(service)} className="mt-2 bg-blue-900 dark:bg-purple-700 text-white">Add to Cart</Button>
             </CardContent>
           </Card>
         ))}
@@ -102,10 +118,15 @@ export default function HomePage() {
         {cart.length === 0 ? (
           <p className="text-gray-700 dark:text-gray-300">Your cart is empty.</p>
         ) : (
-          cart.map((item, index) => (
-            <p key={index} className="border-b py-2 text-gray-900 dark:text-gray-200">{item.name} - ₹{item.price}</p>
+          cart.map((item) => (
+            <div key={item.cartId} className="flex justify-between items-center border-b py-2">
+              <p className="text-gray-900 dark:text-gray-200">{item.name} - ₹{item.price}</p>
+              <Button onClick={() => removeFromCart(item.cartId!)} variant="destructive" className="hover:bg-red-400 text-red-900 hover:text-white-600 px-3 py-1 rounded-md shadow-md">Remove</Button>
+            </div>
           ))
         )}
+        <p className="mt-4 font-bold text-gray-900 dark:text-gray-100">Total: ₹{totalAmount}</p>
+        {cart.length > 0 && <Button className="mt-4 bg-blue-900 text-white w-full" onClick={proceedToPayment}>Confirm & Pay</Button>}
       </div>
 
       <footer className="mt-10 text-center text-gray-600 dark:text-gray-400">

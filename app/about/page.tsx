@@ -1,23 +1,34 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Mail, Phone } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 export default function AboutUs() {
   const router = useRouter();
 
+ const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="p-6 min-h-screen bg-white">
-      {/* Navigation Bar */}
-      <nav className="bg-blue-900 dark:bg-blue-950 p-4 rounded-lg shadow-md text-white flex justify-between items-center">
-        <h1 className="text-3xl font-extrabold tracking-wider uppercase">FOREVER YOUNG</h1>
-        <div>
-          <Button variant="ghost" onClick={() => router.push("/home")} className="text-white">Home</Button>
-          <Button variant="ghost" onClick={() => router.push("/history")} className="text-white">History</Button>
-          <Button variant="ghost" onClick={() => router.push("/profile")} className="text-white">Profile</Button>
-          <Button variant="ghost" onClick={() => router.push("/feedback")} className="text-white">Feedback</Button>
-          <Button variant="ghost" onClick={() => router.push("/about")} className="text-white">About Us</Button>
+      {/* Responsive Navbar */}
+      <nav className="bg-blue-900 dark:bg-blue-950 p-4 rounded-lg shadow-md text-white flex justify-between items-center relative">
+        <h1 className="text-3xl font-extrabold tracking-wider uppercase" onClick={() => router.push("/home")}>FOREVER YOUNG</h1>
+        <div className="md:hidden">
+          <Button variant="ghost" onClick={() => setMenuOpen(!menuOpen)}>
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </Button>
+        </div>
+        <div
+          className={`absolute md:static top-full left-0 w-full md:w-auto bg-blue-900 dark:bg-blue-950 md:flex md:space-x-4 transition-all duration-300 ${menuOpen ? "block" : "hidden"} md:block`}
+        >
+          <Button variant="ghost" onClick={() => router.push("/home")} className="text-white w-full md:w-auto">Home</Button>
+          <Button variant="ghost" onClick={() => router.push("/history")} className="text-white w-full md:w-auto">History</Button>
+          <Button variant="ghost" onClick={() => router.push("/profile")} className="text-white w-full md:w-auto">Profile</Button>
+          <Button variant="ghost" onClick={() => router.push("/feedback")} className="text-white w-full md:w-auto">Feedback</Button>
+          <Button variant="ghost" onClick={() => router.push("/about")} className="text-white w-full md:w-auto">About Us</Button>
         </div>
       </nav>
 
