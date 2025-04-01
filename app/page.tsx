@@ -148,10 +148,10 @@ export default function LandingPage() {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <blockquote className="text-2xl md:text-3xl text-white italic mb-8">
-              "Forever Young gave my mother the care and companionship she needed. Their team treats her like family, and I finally have peace of mind."
+            &quot;Forever Young provided my mother with exceptional care and genuine companionship. Their compassionate team treats her like family, giving me complete peace of mind knowing she&apos;s in good hands.&quot;
             </blockquote>
             <div className="text-blue-100 dark:text-blue-300 font-medium">
-              — Sarah K., Daughter of Client
+            &mdash; Sarah K., Daughter of Client
             </div>
           </div>
         </div>
