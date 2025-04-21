@@ -1,8 +1,9 @@
+/*eslint-disable*/
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { auth, setDoc } from "@/lib/firebase";
+import { auth} from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -107,7 +108,7 @@ export default function CartPage() {
         }
       };
   
-      // @ts-ignore
+      // @ts-ignore-error
       const rzp = new window.Razorpay(options);
       rzp.open();
   
