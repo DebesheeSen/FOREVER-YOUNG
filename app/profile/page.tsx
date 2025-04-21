@@ -8,13 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { auth, db } from "@/lib/firebase";
 import { getDoc, setDoc, doc } from "firebase/firestore";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, User, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 
 type ProfileData = {
   name: string;
-  phones: string; // ✅ Single string, not an array
+  phones: string;
   address: string;
   bio: string;
   emails: string[];
@@ -47,6 +47,11 @@ export default function Profile() {
         router.push("/login");
       } else {
         setUser(currentUser);
+        // Initialize name with user's displayName if available
+        setProfileData(prev => ({
+          ...prev,
+          name: currentUser.displayName || ""
+        }));
         await fetchUserData(currentUser.uid);
       }
     });
@@ -63,10 +68,11 @@ export default function Profile() {
         setProfileData((prev) => ({
           ...prev,
           ...data,
+          name: data.name || user?.displayName || "", // Use displayName as fallback
           emails: data.emails?.length ? data.emails : [""],
           healthIssues: data.healthIssues?.length ? data.healthIssues : [""],
           emergencyContacts: data.emergencyContacts?.length ? data.emergencyContacts : [""],
-          phones: data.phones ?? "", // ✅ Handles missing phone number properly
+          phones: data.phones ?? "",
         }));
       }
     } catch (error) {
@@ -106,7 +112,18 @@ export default function Profile() {
     if (!user) return;
     setLoading(true);
     try {
+      // Update profile data in Firestore
       await setDoc(doc(db, "user_profiles", user.uid), profileData, { merge: true });
+      
+      // Update user's display name in Firebase Auth if name has changed
+      if (profileData.name !== user.displayName) {
+        await updateProfile(user, {
+          displayName: profileData.name
+        });
+        // Update local user state to reflect changes
+        setUser({ ...user, displayName: profileData.name });
+      }
+      
       alert("Profile updated successfully");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -145,10 +162,16 @@ export default function Profile() {
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <Label className="text-lg font-bold text-gray-800 dark:text-gray-200">Name</Label>
-          <Input name="name" value={profileData.name} onChange={handleChange} />
+          <Input 
+            name="name" 
+            value={profileData.name} 
+            onChange={handleChange}
+            placeholder={user?.displayName || "Enter your name"}
+          />
 
+          {/* Rest of the form remains the same */}
           <Label className="text-lg font-bold text-gray-800 dark:text-gray-200">Phone Number</Label>
-          <Input name="phones" value={profileData.phones} onChange={handleChange} /> {/* ✅ Now correctly handles single string */}
+          <Input name="phones" value={profileData.phones} onChange={handleChange} />
 
           <Label className="text-lg font-bold text-gray-800 dark:text-gray-200">Emails</Label>
           {profileData.emails.map((email, index) => (
