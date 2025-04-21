@@ -2,37 +2,86 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
-import { signOut, onAuthStateChanged, User } from "firebase/auth";
+import { auth , getDocs, query, where } from "@/lib/firebase";
+import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ShoppingCart } from "lucide-react";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 type Service = {
   id: string;
   name: string;
   description: string;
   price: number;
-  cartId?: string;
+  category: string;
+  icon: string;
 };
 
-export default function HomePage() {
+export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [cart, setCart] = useState<Service[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
   const services: Service[] = [
-    { id: "1", name: "Book Mental Health Talks", description: "One-on-one mental health sessions.", price: 500 },
-    { id: "2", name: "Book Full Health Checkup", description: "Comprehensive health checkup.", price: 1200 },
-    { id: "3", name: "Book Grocery Shopping", description: "Assistance in purchasing groceries.", price: 300 },
+    { 
+      id: "1", 
+      name: "Mental Health Talks", 
+      description: "One-on-one mental health sessions with certified professionals.", 
+      price: 500,
+      category: "Health",
+      icon: "🧠"
+    },
+    { 
+      id: "2", 
+      name: "Full Health Checkup", 
+      description: "Comprehensive health checkup including blood tests and doctor consultation.", 
+      price: 1200,
+      category: "Health",
+      icon: "🏥"
+    },
+    { 
+      id: "3", 
+      name: "Grocery Shopping", 
+      description: "Assistance in purchasing and delivering groceries to your doorstep.", 
+      price: 300,
+      category: "Daily Needs",
+      icon: "🛒"
+    },
+    { 
+      id: "4", 
+      name: "Medication Reminder", 
+      description: "Daily reminders and assistance with medication management.", 
+      price: 200,
+      category: "Health",
+      icon: "💊"
+    },
+    { 
+      id: "5", 
+      name: "Home Cleaning", 
+      description: "Professional cleaning service for your home.", 
+      price: 600,
+      category: "Home Services",
+      icon: "🧹"
+    },
+    { 
+      id: "6", 
+      name: "Tech Support", 
+      description: "Assistance with smartphones, computers, and other devices.", 
+      price: 400,
+      category: "Technology",
+      icon: "💻"
+    },
   ];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
+        fetchCartCount(user.uid);
       } else {
         router.push("/auth/login");
       }
@@ -40,15 +89,33 @@ export default function HomePage() {
     return () => unsubscribe();
   }, [router]);
 
-  const addToCart = (service: Service) => {
-    const cartItem = { ...service, cartId: `${service.id}-${Date.now()}` }; // Unique ID
-    setCart((prevCart) => [...prevCart, cartItem]);
-    toast.success(`${service.name} added to cart`);
+  const fetchCartCount = async (userId: string) => {
+    try {
+      const q = query(collection(db, "cart"), where("userId", "==", userId));
+      const querySnapshot = await getDocs(q);
+      setCartCount(querySnapshot.size);
+    } catch (error) {
+      console.error("Error fetching cart count: ", error);
+    }
   };
 
-  const removeFromCart = (cartId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.cartId !== cartId));
-    toast.info("Item removed from cart");
+  const addToCart = async (service: Service) => {
+    if (!user) return;
+
+    try {
+      await addDoc(collection(db, "cart"), {
+        name: service.name,
+        price: service.price,
+        userId: user.uid,
+        serviceId: service.id,
+        createdAt: serverTimestamp()
+      });
+      toast.success(`${service.name} added to cart`);
+      setCartCount(prev => prev + 1);
+    } catch (error) {
+      toast.error("Failed to add to cart");
+      console.error("Error adding to cart: ", error);
+    }
   };
 
   const handleLogout = async () => {
@@ -56,77 +123,97 @@ export default function HomePage() {
     toast.info("Logged out successfully");
     router.push("/");
   };
-  
-  const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
-
-
-  const proceedToPayment = () => {
-    localStorage.setItem("cartItems", JSON.stringify(cart));
-    localStorage.setItem("totalAmount", JSON.stringify(totalAmount));
-    router.push("/payment");
-  };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-b from-blue-200 to-purple-300 dark:from-blue-900 dark:to-purple-700">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-100 dark:from-blue-900 dark:to-purple-900 p-6 min-h-screen bg-gray-100 dark:bg-gray-900">
+
       {/* Responsive Navbar */}
-      <nav className="bg-blue-900 dark:bg-blue-950 p-4 rounded-lg shadow-md text-white flex justify-between items-center relative">
-        <h1 className="text-3xl font-extrabold tracking-wider uppercase" onClick={() => router.push("/home")}>FOREVER YOUNG</h1>
-        
-        {/* Hamburger Menu for Mobile */}
-        <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden">
-          {menuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-        
-        {/* Navigation Links */}
-        <div className={`absolute md:static top-16 left-0 w-full md:w-auto bg-blue-900 md:bg-transparent md:flex ${menuOpen ? "block" : "hidden"}`}>
-          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 p-4 md:p-0">
-            <Button variant="ghost" onClick={() => router.push("/home")} className="text-white">Home</Button>
-            <Button variant="ghost" onClick={() => router.push("/history")} className="text-white">History</Button>
-            <Button variant="ghost" onClick={() => router.push("/profile")} className="text-white">Profile</Button>
-            <Button variant="ghost" onClick={() => router.push("/feedback")} className="text-white">Feedback</Button>
-            <Button variant="ghost" onClick={() => router.push("/about")} className="text-white">About Us</Button>
-            <Button onClick={handleLogout} variant="destructive">Logout</Button>
-          </div>
+<nav className="bg-blue-900 dark:bg-blue-950 p-4 rounded-lg shadow-md text-white flex justify-between items-center relative">
+  <h1 className="text-3xl font-extrabold tracking-wider uppercase" onClick={() => router.push("/home")}>FOREVER YOUNG</h1>
+  
+  {/* Mobile menu button */}
+  <div className="flex items-center gap-4 md:hidden">
+    <div className="relative cursor-pointer" onClick={() => router.push("/cart")}>
+      <ShoppingCart className="h-6 w-6" />
+      {cartCount > 0 && (
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+          {cartCount}
+        </span>
+      )}
+    </div>
+    <Button variant="ghost" onClick={() => setMenuOpen(!menuOpen)} className="p-2">
+      {menuOpen ? <X size={24} /> : <Menu size={24} />}
+    </Button>
+  </div>
+
+  {/* Desktop menu items and cart */}
+  <div className="hidden md:flex items-center gap-4">
+    <div className="flex space-x-2">
+      <Button variant="ghost" onClick={() => router.push("/home")} className="text-white">Home</Button>
+      <Button variant="ghost" onClick={() => router.push("/history")} className="text-white">History</Button>
+      <Button variant="ghost" onClick={() => router.push("/profile")} className="text-white">Profile</Button>
+      <Button variant="ghost" onClick={() => router.push("/feedback")} className="text-white">Feedback</Button>
+      <Button variant="ghost" onClick={() => router.push("/about")} className="text-white">About Us</Button>
+    </div>
+    <div className="relative cursor-pointer" onClick={() => router.push("/cart")}>
+      <ShoppingCart className="h-6 w-6" />
+      {cartCount > 0 && (
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+          {cartCount}
+        </span>
+      )}
+    </div>
+  </div>
+
+  {/* Mobile menu dropdown */}
+  <div className={`absolute top-full left-0 w-full bg-blue-900 dark:bg-blue-950 md:hidden transition-all rounded-b-lg duration-300 ${menuOpen ? "block" : "hidden"}`}>
+    <div className="flex flex-col p-2 space-y-2 flex justify-between items-center relative">
+      <Button variant="ghost" onClick={() => router.push("/home")} className="text-white justify-start">Home</Button>
+      <Button variant="ghost" onClick={() => router.push("/history")} className="text-white justify-start">History</Button>
+      <Button variant="ghost" onClick={() => router.push("/profile")} className="text-white justify-start">Profile</Button>
+      <Button variant="ghost" onClick={() => router.push("/feedback")} className="text-white justify-start">Feedback</Button>
+      <Button variant="ghost" onClick={() => router.push("/about")} className="text-white justify-start">About Us</Button>
+    </div>
+  </div>
+</nav>
+
+      {/* Main Content */}
+      <div className="container mx-auto p-4">
+        <div className="mb-8 flex flex-col items-center justify-center text-center">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Welcome back, {user?.displayName || user?.email?.split('@')[0] || "User"}!
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Browse our services designed to make your life easier
+          </p>
         </div>
-      </nav>
-      
-      {/* Welcome Message */}
-      <div className="mt-6 text-center">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Welcome, {user?.displayName || user?.email || "User"}</h1>
-      </div>
 
-      {/* Services Section */}
-      <h2 className="text-xl font-semibold mt-6 text-gray-900 dark:text-gray-100">Available Services</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        {services.map((service) => (
-          <Card key={service.id} className="bg-white dark:bg-blue-800 shadow-md border border-gray-300 dark:border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-900 dark:text-gray-100 font-medium">{service.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 dark:text-gray-300">{service.description}</p>
-              <p className="font-bold text-gray-900 dark:text-gray-200">₹{service.price}</p>
-              <Button onClick={() => addToCart(service)} className="mt-2 bg-blue-900 dark:bg-purple-700 text-white">Add to Cart</Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Cart Section */}
-      <h2 className="text-xl font-semibold mt-6 text-gray-900 dark:text-gray-100">Cart</h2>
-      <div className="border p-4 rounded-md mt-2 bg-white dark:bg-blue-800 shadow-md border-gray-300 dark:border-gray-700">
-        {cart.length === 0 ? (
-          <p className="text-gray-700 dark:text-gray-300">Your cart is empty.</p>
-        ) : (
-          cart.map((item) => (
-            <div key={item.cartId} className="flex justify-between items-center border-b py-2">
-              <p className="text-gray-900 dark:text-gray-200">{item.name} - ₹{item.price}</p>
-              <Button onClick={() => removeFromCart(item.cartId!)} variant="destructive" className="hover:bg-red-400 text-red-900 hover:text-white-600 px-3 py-1 rounded-md shadow-md">Remove</Button>
-            </div>
-          ))
-        )}
-        <p className="mt-4 font-bold text-gray-900 dark:text-gray-100">Total: ₹{totalAmount}</p>
-        {cart.length > 0 && <Button className="mt-4 bg-blue-900 text-white w-full" onClick={proceedToPayment}>Confirm & Pay</Button>}
+        {/* Services Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {services.map((service) => (
+            <Card key={service.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{service.icon}</span>
+                  <CardTitle className="text-lg">{service.name}</CardTitle>
+                </div>
+                <span className="text-sm text-blue-600 dark:text-blue-400">{service.category}</span>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 dark:text-gray-300 mb-4">{service.description}</p>
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-lg">₹{service.price}</span>
+                  <Button 
+                    onClick={() => addToCart(service)}
+                    className="bg-blue-800 hover:bg-blue-900 text-white"
+                  >
+                    Add to Cart
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       <footer className="mt-10 text-center text-gray-600 dark:text-gray-400">

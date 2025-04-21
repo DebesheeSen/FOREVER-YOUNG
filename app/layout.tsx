@@ -1,15 +1,22 @@
 import React,{ReactNode} from 'react';
 import './globals.css';
+import Script from 'next/script';
 
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-export default function Layout({children}: LayoutProps) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Script 
+          src="https://checkout.razorpay.com/v1/checkout.js" 
+          strategy="beforeInteractive"
+        />
+      </body>
     </html>
   );
 }

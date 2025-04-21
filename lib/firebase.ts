@@ -1,6 +1,18 @@
 import { initializeApp } from "firebase/app";
-import { getAuth , GoogleAuthProvider} from "firebase/auth";
-import { getFirestore,doc,getDoc,setDoc } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { 
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  serverTimestamp
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -12,10 +24,34 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Initialize Firebase
 export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider(); 
-const storage = getStorage(app);
 
-export{doc,getDoc,setDoc,storage};
+// Authentication
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+
+// Firestore Database
+export const db = getFirestore(app);
+
+// Storage
+export const storage = getStorage(app);
+
+// Firestore functions
+export {
+  // Document operations
+  doc,
+  getDoc,
+  setDoc,
+  addDoc,
+  deleteDoc,
+  
+  // Collection operations
+  collection,
+  query,
+  where,
+  getDocs,
+  
+  // Timestamp
+  serverTimestamp
+};
