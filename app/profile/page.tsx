@@ -133,6 +133,7 @@ export default function Profile() {
           <Button variant="ghost" onClick={() => router.push("/profile")} className="text-white w-full md:w-auto">Profile</Button>
           <Button variant="ghost" onClick={() => router.push("/feedback")} className="text-white w-full md:w-auto">Feedback</Button>
           <Button variant="ghost" onClick={() => router.push("/about")} className="text-white w-full md:w-auto">About Us</Button>
+          <Button onClick={() => auth.signOut()} variant="destructive">Logout</Button>
         </div>
       </nav>
 

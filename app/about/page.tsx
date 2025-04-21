@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Mail, Phone } from "lucide-react";
 import { Menu, X } from "lucide-react";
+import { auth} from "@/lib/firebase";
 
 export default function AboutUs() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function AboutUs() {
           <Button variant="ghost" onClick={() => router.push("/profile")} className="text-white w-full md:w-auto">Profile</Button>
           <Button variant="ghost" onClick={() => router.push("/feedback")} className="text-white w-full md:w-auto">Feedback</Button>
           <Button variant="ghost" onClick={() => router.push("/about")} className="text-white w-full md:w-auto">About Us</Button>
+          <Button onClick={() => auth.signOut()} variant="destructive">Logout</Button>
         </div>
       </nav>
 

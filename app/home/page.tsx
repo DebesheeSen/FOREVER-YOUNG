@@ -155,6 +155,7 @@ export default function DashboardPage() {
       <Button variant="ghost" onClick={() => router.push("/profile")} className="text-white">Profile</Button>
       <Button variant="ghost" onClick={() => router.push("/feedback")} className="text-white">Feedback</Button>
       <Button variant="ghost" onClick={() => router.push("/about")} className="text-white">About Us</Button>
+      <Button onClick={() => auth.signOut()} variant="destructive">Logout</Button>
     </div>
     <div className="relative cursor-pointer" onClick={() => router.push("/cart")}>
       <ShoppingCart className="h-6 w-6" />
