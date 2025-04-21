@@ -76,7 +76,88 @@ export default function DashboardPage() {
       category: "Technology",
       icon: "💻"
     },
+    { 
+      id: "7", 
+      name: "Companion Visits", 
+      description: "Friendly companions for chatting, games, and emotional support.", 
+      price: 350,
+      category: "Wellness",
+      icon: "🤝"
+    },
+    { 
+      id: "8", 
+      name: "Yoga & Meditation Sessions", 
+      description: "Personalized yoga and meditation sessions for mental and physical well-being.", 
+      price: 450,
+      category: "Wellness",
+      icon: "🧘"
+    },
+    { 
+      id: "9", 
+      name: "Travel Plans Booking", 
+      description: "Help with booking travel plans, accommodations, and trip organization.", 
+      price: 700,
+      category: "Travel",
+      icon: "✈️"
+    },
+    { 
+      id: "10", 
+      name: "Bill Payment Assistance", 
+      description: "Help with paying bills online or offline, including reminders.", 
+      price: 250,
+      category: "Finance",
+      icon: "💸"
+    },
+    { 
+      id: "11", 
+      name: "Emergency Alert Setup", 
+      description: "Installation of emergency alert systems in the house.", 
+      price: 800,
+      category: "Security",
+      icon: "🚨"
+    },
+    { 
+      id: "12", 
+      name: "Wheelchair and Mobility Aid Support", 
+      description: "Assistance with using wheelchairs or other mobility aids.", 
+      price: 300,
+      category: "Mobility",
+      icon: "🦽"
+    },
+    { 
+      id: "13", 
+      name: "Library Book Delivery", 
+      description: "Request and receive books from nearby libraries at your home.", 
+      price: 150,
+      category: "Daily Needs",
+      icon: "📚"
+    },
+    { 
+      id: "14", 
+      name: "Home Safety Inspection", 
+      description: "Inspection of home for safety risks like loose wires, slippery floors, etc.", 
+      price: 500,
+      category: "Security",
+      icon: "🛡️"
+    },
+    { 
+      id: "15", 
+      name: "Clothing & Laundry Service", 
+      description: "Laundry pickup, cleaning, folding, and return service.", 
+      price: 350,
+      category: "Home Services",
+      icon: "👕"
+    },
+    { 
+      id: "16", 
+      name: "Event & Birthday Reminders", 
+      description: "Never miss important family birthdays and anniversaries with scheduled reminders.", 
+      price: 180,
+      category: "Personal Assistance",
+      icon: "🎉"
+    }
   ];
+  
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
