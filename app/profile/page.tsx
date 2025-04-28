@@ -201,7 +201,7 @@ export default function Profile() {
           <Button onClick={() => addField("emergencyContacts")} className="bg-gray-300 text-black">Add Emergency Contact</Button>
 
           <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={loading} className="bg-blue-600 text-white">
+            <Button onClick={handleSave} disabled={loading} className="bg-blue-500 text-white">
               {loading ? "Saving..." : "Update Profile"}
             </Button>
           </div>
